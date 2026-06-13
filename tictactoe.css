@@ -1,0 +1,42 @@
+body{
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+hr{
+    width:1000px;
+    height: 3px;
+    color: black
+}
+
+#board{
+    width:450px;
+    height:450px;
+    background-color: #ffffff;
+    display:flex;
+    flex-wrap: wrap;
+    margin:0 auto;
+}
+
+.tile{
+    width:147px;
+    height:147px;
+    font-size:120px;
+    display:flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.horizontal-lines{
+    border-bottom:3px solid black;
+}
+
+.vertical-lines{
+    border-right:3px solid black;
+}
+
+.winner{
+    background-color: lightgray;
+    color: red;
+}
+
