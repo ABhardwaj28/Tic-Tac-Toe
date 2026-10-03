@@ -1,77 +1,176 @@
-var board;
-var playerO = 'O';
-var playerX = 'X';
-var currentPlayer = playerO;
-var gameOver = false;
+const PLAYER_O = 'O';
+const PLAYER_X = 'X';
 
-window.onload = function() {
-    setGame();
-}
+let board;
+let currentPlayer = PLAYER_O;
+let gameOver = false;
+let scores = {
+    [PLAYER_O]: 0,
+    [PLAYER_X]: 0,
+    ties: 0
+};
 
-function setGame() {
-    board =  [
-        [' ', ' ', ' '], 
-        [' ', ' ', ' '], 
+const WINNING_COMBINATIONS = [
+    // Rows
+    [[0, 0], [0, 1], [0, 2]],
+    [[1, 0], [1, 1], [1, 2]],
+    [[2, 0], [2, 1], [2, 2]],
+    // Columns
+    [[0, 0], [1, 0], [2, 0]],
+    [[0, 1], [1, 1], [2, 1]],
+    [[0, 2], [1, 2], [2, 2]],
+    // Diagonals
+    [[0, 0], [1, 1], [2, 2]],
+    [[0, 2], [1, 1], [2, 0]]
+];
+
+window.addEventListener('DOMContentLoaded', () => {
+    initGame();
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+});
+
+function initGame() {
+    const boardElement = document.getElementById('board');
+    boardElement.innerHTML = '';
+
+    board = [
+        [' ', ' ', ' '],
+        [' ', ' ', ' '],
         [' ', ' ', ' ']
-    ]
+    ];
 
-    for (let r=0;r<3;r++){
-        for (let c=0;c<3;c++){
-            let tile =document.createElement('div');
-            tile.id=r.toString() + "-" +c.toString();
+    gameOver = false;
+    currentPlayer = PLAYER_O;
+    updateStatus();
+
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            const tile = document.createElement('div');
+            tile.id = `${r}-${c}`;
             tile.classList.add('tile');
-            if (r==0 || r==1) {
-                tile.classList.add('horizontal-lines');
-            }
-            if (c==0 || c==1) {
-                tile.classList.add('vertical-lines');
-            }
-            tile.addEventListener('click', setTile);
-            document.getElementById('board').append(tile);
+            tile.addEventListener('click', handleTileClick);
+            boardElement.appendChild(tile);
         }
-    }        
+    }
 }
 
-function setTile() {
-    if (gameOver) {
-        return;
-    }
+function handleTileClick() {
+    if (gameOver) return;
 
-    let coords = this.id.split('-');
-    let r=parseInt(coords[0]);
-    let c=parseInt(coords[1]);
+    const [r, c] = this.id.split('-').map(Number);
 
-    if (board[r][c] != ' ') {
-        return;
-    }
+    if (board[r][c] !== ' ') return;
 
+    // Apply move
     board[r][c] = currentPlayer;
-    this.innerText=currentPlayer;    
+    this.innerText = currentPlayer;
+    this.classList.add('filled', currentPlayer === PLAYER_O ? 'tile-o' : 'tile-x');
 
-    if (currentPlayer == playerO) {
-        currentPlayer = playerX;
-    } 
-
-    else {
-        currentPlayer = playerO;
+    // Check winner or draw
+    const winningCombo = checkWinningCombo();
+    if (winningCombo) {
+        handleWin(winningCombo);
+        return;
     }
 
-    checkWinner();
+    if (checkTie()) {
+        handleTie();
+        return;
+    }
+
+    // Switch player
+    currentPlayer = currentPlayer === PLAYER_O ? PLAYER_X : PLAYER_O;
+    updateStatus();
 }
 
-function checkWinner() {
-    for (let r=0; r<3; r++) 
-        {
-        if (board[r][0] != ' ' && board[r][0] == board[r][1] && board[r][1] == board[r][2]) 
-            {
-            for (let i=0; i<3; i++) 
-                {
-                let tile = document.getElementById(r.toString() + "-" + i.toString());
-                tile.classList.add('winner');
-                }
-                gameOver = true;
-                return;
+function checkWinningCombo() {
+    for (const combo of WINNING_COMBINATIONS) {
+        const [a, b, c] = combo;
+        const valA = board[a[0]][a[1]];
+        const valB = board[b[0]][b[1]];
+        const valC = board[c[0]][c[1]];
+
+        if (valA !== ' ' && valA === valB && valB === valC) {
+            return combo;
+        }
+    }
+    return null;
+}
+
+function checkTie() {
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            if (board[r][c] === ' ') {
+                return false;
             }
         }
     }
+    return true;
+}
 
+function handleWin(winningCombo) {
+    gameOver = true;
+    scores[currentPlayer]++;
+    updateScoreboard();
+
+    // Highlight winning tiles
+    winningCombo.forEach(([r, c]) => {
+        const tile = document.getElementById(`${r}-${c}`);
+        tile.classList.add('winner-tile');
+    });
+
+    // Update status badge
+    const statusElement = document.getElementById('status');
+    const statusText = document.getElementById('status-text');
+    statusElement.className = `status-badge ${currentPlayer === PLAYER_O ? 'turn-o' : 'turn-x'}`;
+    statusText.innerText = `Player ${currentPlayer} Wins! 🎉`;
+}
+
+function handleTie() {
+    gameOver = true;
+    scores.ties++;
+    updateScoreboard();
+
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            document.getElementById(`${r}-${c}`).classList.add('tie-tile');
+        }
+    }
+
+    const statusElement = document.getElementById('status');
+    const statusText = document.getElementById('status-text');
+    statusElement.className = 'status-badge tie';
+    statusText.innerText = `It's a Tie! 🤝`;
+}
+
+function updateStatus() {
+    const statusElement = document.getElementById('status');
+    const statusText = document.getElementById('status-text');
+    statusElement.className = `status-badge ${currentPlayer === PLAYER_O ? 'turn-o' : 'turn-x'}`;
+    statusText.innerText = `Player ${currentPlayer}'s Turn`;
+}
+
+function updateScoreboard() {
+    document.getElementById('score-o').innerText = scores[PLAYER_O];
+    document.getElementById('score-x').innerText = scores[PLAYER_X];
+    document.getElementById('score-ties').innerText = scores.ties;
+}
+
+function resetGame() {
+    board = [
+        [' ', ' ', ' '],
+        [' ', ' ', ' '],
+        [' ', ' ', ' ']
+    ];
+    gameOver = false;
+    currentPlayer = PLAYER_O;
+    updateStatus();
+
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            const tile = document.getElementById(`${r}-${c}`);
+            tile.innerText = '';
+            tile.className = 'tile';
+        }
+    }
+}
